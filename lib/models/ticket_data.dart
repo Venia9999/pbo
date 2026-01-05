@@ -1,15 +1,13 @@
 class TicketData {
-  final String namaUser;
-  final String movieTitle;
-  final String jam;
-  final String kursi;
-  final DateTime tanggal;
-  final int jumlahTiket;
-  final int totalHarga;
-  final String metodePembayaran;
-  final String virtualAccount;
-  final DateTime expiredAt;
-  final PaymentStatus status;
+  String namaUser;
+  String movieTitle;
+  String jam;
+  String kursi;
+  DateTime tanggal;
+  int jumlahTiket;
+  int totalHarga;
+  String metodePembayaran;
+  String virtualAccount;
 
   TicketData({
     required this.namaUser,
@@ -21,13 +19,5 @@ class TicketData {
     required this.totalHarga,
     required this.metodePembayaran,
     required this.virtualAccount,
-    required this.expiredAt,
-    required this.status,
   });
-}
-
-enum PaymentStatus {
-  pending,
-  paid,
-  expired,
 }

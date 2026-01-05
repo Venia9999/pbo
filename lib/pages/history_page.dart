@@ -1,90 +1,98 @@
 import 'package:flutter/material.dart';
+import '../models/ticket_data.dart';
 
 class HistoryPage extends StatelessWidget {
-  final String movieTitle;
-  final String jam;
-  final String kursi;
-  final DateTime tanggal;
-  final int jumlahTiket;
-  final int totalHarga;
+  final TicketData ticket;
 
-  const HistoryPage({
-    super.key,
-    required this.movieTitle,
-    required this.jam,
-    required this.kursi,
-    required this.tanggal,
-    required this.jumlahTiket,
-    required this.totalHarga,
-  });
+  const HistoryPage({super.key, required this.ticket});
+
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF666666);
 
   String get kodePembelian {
-    return "BKP-${tanggal.year}${tanggal.month}${tanggal.day}-${tanggal.millisecondsSinceEpoch.toString().substring(8)}";
+    return "BKP-${ticket.tanggal.year}${ticket.tanggal.month}${ticket.tanggal.day}-${ticket.tanggal.millisecondsSinceEpoch.toString().substring(8)}";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: const Text("Detail Tiket"),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0A1F44),
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _ticketCard(),
-            const SizedBox(height: 24),
-            _infoLoket(),
-            const Spacer(),
-            _btnKembaliHome(context),
-          ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: gold),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    "Detail Tiket",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: gold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _ticketCard(),
+              const SizedBox(height: 24),
+              _infoLoket(),
+              const Spacer(),
+              _btnKembaliHome(context),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ================= KARTU TIKET =================
   Widget _ticketCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
+            color: gold.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _rowInfo("Film", movieTitle),
+          _rowInfo("Film", ticket.movieTitle),
           _divider(),
-          _rowInfo("Jam Tayang", jam),
-          _rowInfo("Kursi", kursi),
-          _rowInfo("Jumlah Tiket", "$jumlahTiket"),
+          _rowInfo("Jam Tayang", ticket.jam),
+          _rowInfo("Kursi", ticket.kursi),
+          _rowInfo("Jumlah Tiket", "${ticket.jumlahTiket}"),
           _rowInfo(
             "Tanggal",
-            "${tanggal.day}-${tanggal.month}-${tanggal.year}",
+            "${ticket.tanggal.day}-${ticket.tanggal.month}-${ticket.tanggal.year}",
           ),
           _divider(),
           _rowInfo(
             "Total Harga",
-            "Rp ${totalHarga.toString()}",
+            "Rp ${ticket.totalHarga}",
+            isHighlight: true,
           ),
-          const SizedBox(height: 20),
-
-          // KODE PEMBELIAN
+          const SizedBox(height: 22),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF0A1F44),
+              gradient: const LinearGradient(
+                colors: [gold, Color(0xFFE6C567)],
+              ),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -92,12 +100,15 @@ class HistoryPage extends StatelessWidget {
               children: [
                 const Text(
                   "Kode Pembelian",
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   kodePembelian,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -109,22 +120,24 @@ class HistoryPage extends StatelessWidget {
     );
   }
 
-  // ================= INFO LOKET =================
   Widget _infoLoket() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: gold.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: const [
-          Icon(Icons.info_outline, color: Color(0xFF0A1F44)),
+          Icon(Icons.info_outline, color: gold),
           SizedBox(width: 12),
           Expanded(
             child: Text(
               "Tunjukkan kode pembelian ini ke loket bioskop untuk mencetak tiket.",
-              style: TextStyle(fontSize: 13),
+              style: TextStyle(
+                fontSize: 13,
+                color: textSecondary,
+              ),
             ),
           ),
         ],
@@ -132,16 +145,17 @@ class HistoryPage extends StatelessWidget {
     );
   }
 
-  // ================= BUTTON =================
   Widget _btnKembaliHome(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 54,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0A1F44),
+          backgroundColor: gold,
+          foregroundColor: Colors.black,
+          elevation: 6,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         onPressed: () {
@@ -149,25 +163,37 @@ class HistoryPage extends StatelessWidget {
         },
         child: const Text(
           "Kembali ke Home",
-          style: TextStyle(fontSize: 16),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  // ================= UTIL =================
-  Widget _rowInfo(String label, String value) {
+  Widget _rowInfo(String label, String value, {bool isHighlight = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: textSecondary,
+              fontSize: 14,
+            ),
+          ),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+                color: isHighlight ? gold : textPrimary,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -177,7 +203,7 @@ class HistoryPage extends StatelessWidget {
 
   Widget _divider() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Divider(color: Colors.grey.shade300),
     );
   }

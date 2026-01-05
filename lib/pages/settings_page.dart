@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -8,25 +9,58 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  static const Color navy = Color(0xFF0A1F44);
-  static const Color lightBg = Color(0xFFF3F6FF);
+  // ================= THEME =================
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF555555);
 
   bool notifOn = true;
   bool darkMode = false;
+  String videoQuality = "Otomatis";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  // ================= LOAD SETTINGS =================
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      notifOn = prefs.getBool('notif_on') ?? true;
+      darkMode = prefs.getBool('dark_mode') ?? false;
+      videoQuality = prefs.getString('video_quality') ?? "Otomatis";
+    });
+  }
+
+  // ================= SAVE SETTINGS =================
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notif_on', notifOn);
+    await prefs.setBool('dark_mode', darkMode);
+    await prefs.setString('video_quality', videoQuality);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: lightBg,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Pengaturan"),
         centerTitle: true,
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
         elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: gold),
+        title: const Text(
+          "Pengaturan",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: gold,
+          ),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
         children: [
           _sectionTitle("Preferensi"),
 
@@ -37,6 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
             value: notifOn,
             onChanged: (val) {
               setState(() => notifOn = val);
+              _saveSettings();
             },
           ),
 
@@ -47,15 +82,73 @@ class _SettingsPageState extends State<SettingsPage> {
             value: darkMode,
             onChanged: (val) {
               setState(() => darkMode = val);
+              _saveSettings();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Mode gelap global belum diaktifkan"),
+                ),
+              );
             },
           ),
 
           const SizedBox(height: 30),
 
-          _sectionTitle("Lainnya"),
+          _sectionTitle("Umum"),
 
           _menuTile(
-            icon: Icons.info,
+            icon: Icons.language,
+            title: "Bahasa",
+            subtitle: "Bahasa Indonesia",
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Fitur pengaturan bahasa belum tersedia"),
+                ),
+              );
+            },
+          ),
+
+          _menuTile(
+            icon: Icons.high_quality,
+            title: "Kualitas Video",
+            subtitle: videoQuality,
+            onTap: () async {
+              final result = await showModalBottomSheet<String>(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (_) => _videoQualitySheet(),
+              );
+
+              if (result != null) {
+                setState(() => videoQuality = result);
+                _saveSettings();
+              }
+            },
+          ),
+
+          _menuTile(
+            icon: Icons.cleaning_services,
+            title: "Bersihkan Cache",
+            subtitle: "Hapus data sementara aplikasi",
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Cache berhasil dibersihkan"),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 30),
+
+          _sectionTitle("Tentang"),
+
+          _menuTile(
+            icon: Icons.info_outline,
             title: "Tentang Aplikasi",
             subtitle: "Informasi aplikasi",
             onTap: () {
@@ -63,7 +156,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 context: context,
                 applicationName: "Bioskop App",
                 applicationVersion: "Versi 1.0.0",
-                applicationIcon: const Icon(Icons.movie),
+                applicationIcon: const Icon(Icons.local_movies),
                 children: const [
                   Text(
                     "Aplikasi pemesanan tiket bioskop berbasis Flutter.",
@@ -73,20 +166,7 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
 
-          _menuTile(
-            icon: Icons.lock,
-            title: "Privasi & Keamanan",
-            subtitle: "Kebijakan dan keamanan",
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Fitur belum tersedia"),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
 
           Center(
             child: Text(
@@ -102,16 +182,35 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // ================= VIDEO QUALITY SHEET =================
+  Widget _videoQualitySheet() {
+    final qualities = ["Otomatis", "480p", "720p", "1080p"];
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      shrinkWrap: true,
+      children: qualities.map((q) {
+        return ListTile(
+          title: Text(q),
+          trailing: q == videoQuality
+              ? const Icon(Icons.check, color: gold)
+              : null,
+          onTap: () => Navigator.pop(context, q),
+        );
+      }).toList(),
+    );
+  }
+
   // ================= SECTION TITLE =================
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Text(
         title,
         style: const TextStyle(
           fontWeight: FontWeight.bold,
-          fontSize: 16,
-          color: navy,
+          fontSize: 18,
+          color: textPrimary,
         ),
       ),
     );
@@ -127,17 +226,34 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.only(bottom: 12),
+      shadowColor: gold.withOpacity(0.25),
+      margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: SwitchListTile(
-        secondary: Icon(icon, color: navy),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
         value: value,
         onChanged: onChanged,
-        activeColor: navy,
+        activeColor: gold,
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: textSecondary),
+        ),
+        secondary: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: gold),
+        ),
       ),
     );
   }
@@ -151,16 +267,39 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.only(bottom: 12),
+      shadowColor: gold.withOpacity(0.25),
+      margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
-        leading: Icon(icon, color: navy),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: gold.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: gold),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(color: textSecondary),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 16,
+          color: Colors.black54,
+        ),
       ),
     );
   }

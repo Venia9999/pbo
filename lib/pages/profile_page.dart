@@ -1,31 +1,95 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'profile_info_page.dart';
-import 'settings_page.dart'; // ✅ TAMBAH INI
+import 'settings_page.dart';
+import 'login_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final String userName;
-
   const ProfilePage({super.key, required this.userName});
 
-  static const Color navy = Color(0xFF0A1F44);
-  static const Color lightBg = Color(0xFFF3F6FF);
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  // ================= THEME =================
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF555555);
+
+  String name = "";
+  File? profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  // ================= LOAD PROFILE =================
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      name = prefs.getString('name') ?? widget.userName;
+
+      final imagePath = prefs.getString('profile_image');
+      if (imagePath != null && imagePath.isNotEmpty) {
+        profileImage = File(imagePath);
+      }
+    });
+  }
+
+  // ================= OPEN EDIT PROFILE =================
+  Future<void> _openEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileInfoPage(userName: name),
+      ),
+    );
+
+    if (result == true) {
+      _loadProfile(); // 🔥 refresh data setelah edit
+    }
+  }
+
+  // ================= LOGOUT =================
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 🔥 hapus semua data login & profil
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    // 🔁 pindah ke LoginPage & hapus semua route
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: lightBg,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
           "Akun Saya",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+            color: gold,
           ),
         ),
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        iconTheme: const IconThemeData(color: gold),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
@@ -36,22 +100,25 @@ class ProfilePage extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [navy, navy.withOpacity(0.8)],
+                gradient: const LinearGradient(
+                  colors: [gold, Color(0xFFE6C567)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: navy.withOpacity(0.25),
-                    blurRadius: 12,
+                    color: gold.withOpacity(0.35),
+                    blurRadius: 14,
                     offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 56,
                 backgroundColor: Colors.white,
-                backgroundImage:
-                    AssetImage("assets/avatar/default_avatar.png"),
+                backgroundImage: profileImage != null
+                    ? FileImage(profileImage!)
+                    : const AssetImage(
+                        "assets/avatar/default_avatar.png",
+                      ) as ImageProvider,
               ),
             ),
 
@@ -59,11 +126,11 @@ class ProfilePage extends StatelessWidget {
 
             // ================= NAMA =================
             Text(
-              userName,
+              name,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: navy,
+                color: textPrimary,
               ),
             ),
 
@@ -73,7 +140,7 @@ class ProfilePage extends StatelessWidget {
               "Selamat datang di akun kamu 👋",
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.black54,
+                color: textSecondary,
               ),
             ),
 
@@ -84,20 +151,11 @@ class ProfilePage extends StatelessWidget {
               icon: Icons.person,
               title: "Informasi Profil",
               subtitle: "Lihat dan kelola data akun",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ProfileInfoPage(userName: userName),
-                  ),
-                );
-              },
+              onTap: _openEditProfile,
             ),
 
             const SizedBox(height: 16),
 
-            // ✅ FIX DI SINI
             _menuCard(
               icon: Icons.settings,
               title: "Pengaturan",
@@ -119,9 +177,7 @@ class ProfilePage extends StatelessWidget {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: _logout,
                 icon: const Icon(Icons.logout),
                 label: const Text(
                   "Logout",
@@ -131,8 +187,8 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: navy,
-                  foregroundColor: Colors.white,
+                  backgroundColor: gold,
+                  foregroundColor: Colors.black,
                   elevation: 6,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -159,8 +215,8 @@ class ProfilePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Card(
-          elevation: 5,
-          shadowColor: navy.withOpacity(0.25),
+          elevation: 4,
+          shadowColor: gold.withOpacity(0.25),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
@@ -170,19 +226,28 @@ class ProfilePage extends StatelessWidget {
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: navy.withOpacity(0.12),
+                color: gold.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: navy),
+              child: Icon(icon, color: gold),
             ),
             title: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
             ),
-            subtitle: Text(subtitle),
+            subtitle: Text(
+              subtitle,
+              style: const TextStyle(
+                color: textSecondary,
+              ),
+            ),
             trailing: const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
+              color: Colors.black54,
             ),
           ),
         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/movie.dart';
 import 'ticket_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DetailMoviePage extends StatefulWidget {
   final Movie movie;
@@ -12,7 +12,22 @@ class DetailMoviePage extends StatefulWidget {
 }
 
 class _DetailMoviePageState extends State<DetailMoviePage> {
+  // ================= THEME =================
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color lightGold = Color(0xFFFFF4D6);
+  static const Color bg = Color(0xFFF6F6F6);
+  static const Color textDark = Color(0xFF333333);
+
   bool isFavorite = false;
+  String selectedJam = "13:00";
+
+  final List<String> jamTayang = [
+    "10:00",
+    "13:00",
+    "16:00",
+    "19:00",
+    "21:30",
+  ];
 
   @override
   void initState() {
@@ -23,7 +38,7 @@ class _DetailMoviePageState extends State<DetailMoviePage> {
   Future<void> _loadFavorite() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      isFavorite = prefs.getBool('favorite_${widget.movie.id}') ?? false;
+      isFavorite = prefs.getBool('fav_${widget.movie.id}') ?? false;
     });
   }
 
@@ -31,23 +46,25 @@ class _DetailMoviePageState extends State<DetailMoviePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       isFavorite = !isFavorite;
-      prefs.setBool('favorite_${widget.movie.id}', isFavorite);
+      prefs.setBool('fav_${widget.movie.id}', isFavorite);
     });
   }
-
-  static const Color navy = Color(0xFF0A1F44);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: bg,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: gold,
+        elevation: 0,
         title: Text(widget.movie.title),
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: gold,
+            ),
             onPressed: _toggleFavorite,
           ),
         ],
@@ -55,100 +72,151 @@ class _DetailMoviePageState extends State<DetailMoviePage> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // POSTER + INFO
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        widget.movie.poster,
-                        width: 130,
-                        height: 190,
-                        fit: BoxFit.cover,
+                // ===== POSTER + INFO =====
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: _box(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.network(
+                          widget.movie.poster,
+                          width: 130,
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.movie.title,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: navy,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.movie.title,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: textDark,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          _infoRow(Icons.schedule, "${widget.movie.duration} menit"),
-                          const SizedBox(height: 6),
-                          _infoRow(Icons.movie, "Sedang Tayang"),
-                        ],
+                            const SizedBox(height: 12),
+                            _infoRow(
+                              Icons.schedule,
+                              "${widget.movie.duration} menit",
+                            ),
+                            const SizedBox(height: 8),
+                            _infoRow(
+                              Icons.movie,
+                              "Sedang Tayang",
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
+
+                const SizedBox(height: 28),
+
+                // ===== JAM TAYANG =====
+                const Text(
+                  "Pilih Jam Tayang",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: gold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: jamTayang.map((jam) {
+                    final selected = jam == selectedJam;
+                    return ChoiceChip(
+                      label: Text(jam),
+                      selected: selected,
+                      selectedColor: gold,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: gold),
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : gold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      onSelected: (_) {
+                        setState(() => selectedJam = jam);
+                      },
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 28),
+
+                // ===== DESKRIPSI =====
                 const Text(
                   "Deskripsi Film",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: navy,
+                    color: gold,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
+                  decoration: _box(),
                   child: Text(
                     widget.movie.description,
-                    style: const TextStyle(fontSize: 14, height: 1.6),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.6,
+                      color: textDark,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+
+          // ===== BUTTON PESAN =====
           Positioned(
             left: 16,
             right: 16,
-            bottom: 16,
+            bottom: 20,
             child: SizedBox(
-              height: 54,
+              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: navy,
+                  backgroundColor: gold,
+                  foregroundColor: Colors.black,
+                  elevation: 10,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  elevation: 8,
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => TicketPage(movie: widget.movie),
+                      builder: (_) => TicketPage(
+                        movie: widget.movie,
+                        selectedJam: selectedJam,
+                      ),
                     ),
                   );
                 },
                 child: const Text(
-                  "Pesan Tiket Sekarang",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  "Pesan Tiket",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -158,16 +226,28 @@ class _DetailMoviePageState extends State<DetailMoviePage> {
     );
   }
 
+  // ================= UTIL =================
   Widget _infoRow(IconData icon, String text) {
     return Row(
       children: [
         Icon(icon, size: 18, color: Colors.grey),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.grey),
-          ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  BoxDecoration _box() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          blurRadius: 12,
         ),
       ],
     );

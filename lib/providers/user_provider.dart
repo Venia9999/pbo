@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-
-class User {
-  final String name;
-  User({required this.name});
-}
+import '../models/user.dart';
 
 class UserProvider extends ChangeNotifier {
   User? _user;
 
   User? get user => _user;
 
-  void login(String name) {
-    _user = User(name: name);
+  void setUser(User user) {
+    _user = user;
+    notifyListeners();
+  }
+
+  void logout() {
+    _user = null;
     notifyListeners();
   }
 }

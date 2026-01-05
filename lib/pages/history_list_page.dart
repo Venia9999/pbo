@@ -1,108 +1,147 @@
 import 'package:flutter/material.dart';
-import '../data/ticket_storage.dart';
-import '../models/ticket_data.dart';
+import 'package:provider/provider.dart';
+import '../providers/ticket_provider.dart';
 import 'history_page.dart';
 
 class HistoryListPage extends StatelessWidget {
   const HistoryListPage({super.key});
 
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF666666);
+
   @override
   Widget build(BuildContext context) {
-    final List<TicketData> tickets = TicketStorage.tickets;
+    final tickets = Provider.of<TicketProvider>(context).tickets;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Riwayat Tiket"),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF0A1F44),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: gold,
+        elevation: 0,
+        title: const Text(
+          "Riwayat Pemesanan",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-
       body: tickets.isEmpty
-          ? const Center(
-              child: Text(
-                "Belum ada tiket",
-                style: TextStyle(fontSize: 16),
-              ),
-            )
+          ? _emptyState()
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: tickets.length,
-              itemBuilder: (context, index) {
-                final ticket = tickets[index];
-
-                return _historyItem(
-                  context,
-                  ticket: ticket,
-                );
+              itemBuilder: (_, i) {
+                final t = tickets[i];
+                return _ticketCard(context, t);
               },
             ),
     );
   }
 
-  Widget _historyItem(
-    BuildContext context, {
-    required TicketData ticket,
-  }) {
+  /// ================= EMPTY STATE =================
+  Widget _emptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.confirmation_number_outlined,
+              size: 64, color: gold),
+          SizedBox(height: 12),
+          Text(
+            "Belum ada pemesanan",
+            style: TextStyle(
+              fontSize: 16,
+              color: textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ================= TICKET CARD =================
+  Widget _ticketCard(BuildContext context, dynamic t) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => HistoryPage(
-              movieTitle: ticket.movieTitle,
-              jam: ticket.jam,
-              kursi: ticket.kursi,
-              tanggal: ticket.tanggal,
-              jumlahTiket: ticket.jumlahTiket,
-              totalHarga: ticket.totalHarga,
-            ),
+            builder: (_) => HistoryPage(ticket: t),
           ),
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
+              color: gold.withOpacity(0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// Film title
             Text(
-              ticket.movieTitle,
+              t.movieTitle,
               style: const TextStyle(
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                color: textPrimary,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              "Jam ${ticket.jam} • Kursi ${ticket.kursi}",
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Jumlah: ${ticket.jumlahTiket} tiket",
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Total: Rp ${ticket.totalHarga}",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0A1F44),
-              ),
+            const SizedBox(height: 14),
+
+            _tableRow("Jam Tayang", t.jam),
+            _tableRow("Kursi", t.kursi),
+            _tableRow("Jumlah Tiket", "${t.jumlahTiket}"),
+
+            const Divider(height: 22),
+
+            _tableRow(
+              "Total Harga",
+              "Rp ${t.totalHarga}",
+              highlight: true,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// ================= TABLE ROW =================
+  Widget _tableRow(
+    String label,
+    String value, {
+    bool highlight = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
+              color: highlight ? gold : textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }

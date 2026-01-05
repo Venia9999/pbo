@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileInfoPage extends StatefulWidget {
   final String userName;
@@ -10,18 +13,25 @@ class ProfileInfoPage extends StatefulWidget {
 }
 
 class _ProfileInfoPageState extends State<ProfileInfoPage> {
-  static const Color navy = Color(0xFF0A1F44);
+  // ================= THEME =================
+  static const Color gold = Color(0xFFD4AF37);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF555555);
 
   late TextEditingController nameController;
   late TextEditingController emailController;
   late TextEditingController phoneController;
 
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.userName);
-    emailController = TextEditingController(text: "user@email.com");
-    phoneController = TextEditingController(text: "08xxxxxxxxxx");
+    nameController = TextEditingController();
+    emailController = TextEditingController();
+    phoneController = TextEditingController();
+    _loadProfile();
   }
 
   @override
@@ -32,16 +42,76 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     super.dispose();
   }
 
+  // ================= LOAD DATA =================
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      nameController.text =
+          prefs.getString('name') ?? widget.userName;
+      emailController.text =
+          prefs.getString('email') ?? 'user@email.com';
+      phoneController.text =
+          prefs.getString('phone') ?? '08xxxxxxxxxx';
+
+      final imagePath = prefs.getString('profile_image');
+      if (imagePath != null) {
+        _profileImage = File(imagePath);
+      }
+    });
+  }
+
+  // ================= SAVE DATA =================
+  Future<void> _saveProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('name', nameController.text);
+    await prefs.setString('email', emailController.text);
+    await prefs.setString('phone', phoneController.text);
+
+    if (_profileImage != null) {
+      await prefs.setString(
+          'profile_image', _profileImage!.path);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Profil berhasil disimpan"),
+        backgroundColor: Colors.black87,
+      ),
+    );
+
+    Navigator.pop(context, true);
+  }
+
+  // ================= PICK IMAGE =================
+  Future<void> _pickImage() async {
+    final XFile? picked =
+        await _picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() {
+        _profileImage = File(picked.path);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Edit Profil"),
         centerTitle: true,
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
         elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: gold),
+        title: const Text(
+          "Edit Profil",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: gold,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
@@ -49,47 +119,62 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
           children: [
             // ================= AVATAR =================
             Stack(
+              alignment: Alignment.bottomRight,
               children: [
-                const CircleAvatar(
-                  radius: 60,
-                  backgroundImage:
-                      AssetImage("assets/avatar/default_avatar.png"),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [gold, Color(0xFFE6C567)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: gold.withOpacity(0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: 56,
+                    backgroundColor: Colors.white,
+                    backgroundImage: _profileImage != null
+                        ? FileImage(_profileImage!)
+                        : const AssetImage(
+                                "assets/avatar/default_avatar.png")
+                            as ImageProvider,
+                  ),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
+                GestureDetector(
+                  onTap: _pickImage,
                   child: CircleAvatar(
                     radius: 18,
-                    backgroundColor: navy,
+                    backgroundColor: gold,
                     child: const Icon(
                       Icons.camera_alt,
                       size: 18,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
-                )
+                ),
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
 
-            // ================= FORM =================
             _inputField(
               label: "Nama Lengkap",
               controller: nameController,
               icon: Icons.person,
             ),
-
             const SizedBox(height: 16),
-
             _inputField(
               label: "Email",
               controller: emailController,
               icon: Icons.email,
             ),
-
             const SizedBox(height: 16),
-
             _inputField(
               label: "No. Telepon",
               controller: phoneController,
@@ -98,22 +183,16 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
 
             const SizedBox(height: 40),
 
-            // ================= SIMPAN =================
+            // ================= SAVE =================
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Profil berhasil diperbarui"),
-                    ),
-                  );
-
-                  Navigator.pop(context);
-                },
+                onPressed: _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: navy,
+                  backgroundColor: gold,
+                  foregroundColor: Colors.black,
+                  elevation: 6,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -133,7 +212,7 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
     );
   }
 
-  // ================= INPUT FIELD =================
+  // ================= INPUT =================
   Widget _inputField({
     required String label,
     required TextEditingController controller,
@@ -141,9 +220,11 @@ class _ProfileInfoPageState extends State<ProfileInfoPage> {
   }) {
     return TextField(
       controller: controller,
+      style: const TextStyle(color: textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: const TextStyle(color: textSecondary),
+        prefixIcon: Icon(icon, color: gold),
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
